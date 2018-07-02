@@ -1,20 +1,22 @@
-;https://www.ime.usp.br/~pf/algoritmos/aulas/footnotes/polonesa-pseudocode.html
-
+;https://www.jdoodle.com/compile-assembler-nasm-online
 %macro imprima 2
+    pushad
     mov eax, 4
     mov ebx, 1
     mov ecx, %1
     mov edx, %2
     int 0x80
-    
+    popad
 %endmacro
 
 %macro leia 2
+    pushad
     mov eax, 3
     mov ebx, 0
     mov ecx, %1
     mov edx, %2
     int 0x80
+    popad
 %endmacro
 
 %macro fim 0
@@ -24,54 +26,92 @@
 %endmacro
 
 section .bss
-    dadolido resb 1
+    expressao resb 200
+    i resw 1
+    char_atual resb 1
+    auxiliar resb 1
+    abre_p resw 1
+    fecha_p resw 1
     
 section .text
     global _start
     
 _start:
-inicio:
-    leia dadolido, 1
-    mov eax, [dadolido]
-    cmp eax, 0xa            ;cmp com quebra de linha
-    jz ofim                  ;se for quebra de linha, fim
-    cmp eax, '('            ;verifica se é chave abrindo
-    jz ehparentesesabrindo
-    jmp nehparentesesabrindo
-
-ehparentesesabrindo:
+    leia expressao, 200
+    mov ebx, 0x0
+    mov [i],ebx
+    mov eax, '('
     push eax
-    jmp inicio         ;salta todos os outros ifs
-nehparentesesabrindo:
-    cmp eax, ')'
-    jz ehparentesesfechando
-    jmp nehparentesesfechando
-ehparentesesfechando:
-    jmp inicio         ;salta todos os outros ifs
-nehparentesesfechando:
-    cmp eax,'+'
-    jz ehsomaousub
-    cmp eax, '-'
-    jz ehsomaousub
-    jmp nehsomaousub
-ehsomaousub:
-    -----
-    
-    jmp inicio         ;salta todos os outros ifs
-nehsomaousub:
-    cmp eax, '*'
-    jz ehmuloudiv
-    cmp eax, '/'
-    jz ehmuloudiv
-    jmp nehmuloudiv
-    
-ehmuloudiv:
-    ------
-    jmp inicio         ;salta todos os outros ifs
-nehmuloudiv:
-    imprima eax,1       ;se chegar aqui é numero, e numero imprime
-    
-    
-ofim:
+volta_inicio:
+    mov eax, 0x0
+    mov al, [expressao + ebx]
+    add ebx,1
+    mov byte [char_atual], al
+    cmp al, '='
+    je o_fim
+    cmp al, '('
+    je par_abr
+    cmp al,')'
+    je par_fec
+    cmp al, '+'
+    je mais_ou_menos
+    cmp al, '-'
+    je mais_ou_menos
+    cmp al, '*'
+    je mult_ou_div
+    cmp al, '/'
+    je mult_ou_div
+    imprima char_atual, 1
+    jmp volta_inicio
+
+;------------------
+par_abr:
+    mov eax, [char_atual]
+    push eax
+    jmp volta_inicio
+;------------------
+par_fec:
+    ;Implementar parte que verifica estouro de pilha
+    pop ecx
+    cmp cl,'('
+    je volta_inicio
+    mov byte [auxiliar], cl 
+    imprima auxiliar, 1 
+    jmp par_fec
+;------------------
+mais_ou_menos:
+    pop ecx
+    cmp cl, '('
+    je fim_mais_ou_menos
+    mov [auxiliar],cl
+    imprima auxiliar, 1
+    jmp mais_ou_menos
+fim_mais_ou_menos:
+    mov ecx, '('
+    push ecx
+    mov ecx, [char_atual]
+    push ecx
+    jmp volta_inicio
+;------------------
+mult_ou_div:
+    pop ecx
+    cmp cl, '('
+    je fim_mult_ou_div
+    cmp cl, '+'
+    je fim_mult_ou_div
+    cmp cl, '-'
+    je fim_mult_ou_div
+    mov [auxiliar], cl
+    imprima auxiliar, 1
+    jmp mult_ou_div
+fim_mult_ou_div:
+    push ecx
+    mov ecx, [char_atual]
+    push ecx
+    jmp volta_inicio
+;------------------
+
+o_fim:
+    ; Chamar a função de verificação da pilha
+    ; Verificar reg esp
     fim
-    
