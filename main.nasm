@@ -92,7 +92,7 @@ par_fec:
     mov byte [auxiliar], cl
     ;------------------------
     mov dword edx, [contador]
-    mov al, [char_atual]
+    mov al, [auxiliar]
     mov byte [expressao_pos + edx], al
     inc edx
     mov dword [contador],edx
@@ -107,7 +107,7 @@ mais_ou_menos:
     mov [auxiliar],cl
     ;------------------------
     mov dword edx, [contador]
-    mov al, [char_atual]
+    mov al, [auxiliar]
     mov byte [expressao_pos + edx], al
     inc edx
     mov dword [contador],edx
@@ -132,7 +132,7 @@ mult_ou_div:
     mov [auxiliar], cl
     ;------------------------
     mov dword edx, [contador]
-    mov al, [char_atual]
+    mov al, [auxiliar]
     mov byte [expressao_pos + edx], al
     inc edx
     mov dword [contador],edx
@@ -145,21 +145,95 @@ fim_mult_ou_div:
     push ecx
     jmp volta_inicio
 ;------------------
-
+    
 o_fim:
-    mov byte [char_atual],0xa
-    imprima char_atual,1
-    mov edx, 0x0
-    mov al, [expressao_pos +edx]
-    mov [char_atual],al
-    imprima char_atual,1
+    ;mov byte [char_atual],0xa
+    ;imprima char_atual,1
+    ;mov edx, 0x0
+    ;mov al, [expressao_pos +edx]
+    ;mov [char_atual],al
+    ;imprima char_atual,1
     mov eax, [topo_pilha]
     cmp eax, esp
-    je o_fim2                   ;encaminhar para erro
+    jne o_fim2                   ;encaminhar para erro
+    ;---------------------------- parte da pilha de calculo de operações do sr lucas
+    mov eax,0x0
+    ;----------------------------
+    mov eax, [contador]         ;eax eu uso pro contador (sei o total de espaços utilizaods na pilha)
+    ;sub eax, 1                  ;ebx eu uso na leitura de variáveis
+    mov ecx, 0x0                ;ecx eu uso como 'i' e como pilha
+check_operator:                 ;edx eu uso how
+    ;add ecx, '0'
+    cmp ecx, eax
+    je o_fim2
+    ;---------------------------
+    mov bl, [expressao_pos + ecx]
+    inc ecx
+    ;mov dl, bl
+    ;mov byte [char_atual],dl
+    ;imprima char_atual,1
+    mov bh, '+'
+    cmp bl,bh
+    je soma
+    ;mov byte [char_atual],'*'
+    ;imprima [char_atual],1
+    mov bh, '-'
+    cmp bl,bh
+    je subt
+    mov bh, '*'
+    cmp bl,bh
+    je mult
+    mov bh, '/'
+    cmp bl,bh
+    je divi
+    movsx edx, bl
+    ;----------------------------
+    ;mov dl, bl
+    ;mov byte [char_atual],dl
+    ;imprima char_atual,1
+    ;-----------------------------
+    push edx
+    ;inc ecx
+    jmp check_operator
     
+soma:
+    ;mov dl, '='
+    ;mov byte [char_atual],dl
+    ;imprima char_atual,1
+    pop ebx
+    pop edx
+    ;mov [i],ebx
+    ;imprima i, 1
+    sub ebx, '0'
+    sub edx, '0'
+    add edx, ebx
+    add edx, '0'
+    push edx
+    jmp check_operator
+subt:
+    pop ebx
+    pop edx
+    sub ebx, '0'
+    sub edx, '0'
+    sub edx, ebx
+    add edx, '0'
+    push edx
+    jmp check_operator
+mult:
+    jmp check_operator
+divi:
+    jmp check_operator
     
+    fim
     
 o_fim2:
+    mov al, 0xa
+    mov byte [char_atual], al
+    imprima char_atual,1
+    pop eax
+    ;add eax, '0'
+    mov [i], eax
+    imprima i, 1
     ; Chamar a função de verificação da pilha
     ; Verificar reg esp
     fim
