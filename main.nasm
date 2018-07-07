@@ -162,13 +162,17 @@ o_fim:
     mov eax, [contador]         ;eax eu uso pro contador (sei o total de espaços utilizaods na pilha)
     ;sub eax, 1                  ;ebx eu uso na leitura de variáveis
     mov ecx, 0x0                ;ecx eu uso como 'i' e como pilha
+    mov [i], ecx
 check_operator:                 ;edx eu uso how
+    mov eax, [contador]
+    mov ecx, [i]
     ;add ecx, '0'
     cmp ecx, eax
     je o_fim2
     ;---------------------------
     mov bl, [expressao_pos + ecx]
-    inc ecx
+    add ecx, 1
+    mov [i], ecx
     ;mov dl, bl
     ;mov byte [char_atual],dl
     ;imprima char_atual,1
@@ -201,27 +205,45 @@ soma:
     ;mov byte [char_atual],dl
     ;imprima char_atual,1
     pop ebx
-    pop edx
+    pop eax
     ;mov [i],ebx
     ;imprima i, 1
     sub ebx, '0'
-    sub edx, '0'
-    add edx, ebx
-    add edx, '0'
-    push edx
+    sub eax, '0'
+    add eax, ebx
+    add eax, '0'
+    push eax
     jmp check_operator
 subt:
     pop ebx
-    pop edx
+    pop eax
     sub ebx, '0'
-    sub edx, '0'
-    sub edx, ebx
-    add edx, '0'
-    push edx
+    sub eax, '0'
+    sub eax, ebx
+    add eax, '0'
+    push eax
     jmp check_operator
 mult:
+    pop ebx
+    pop eax
+    sub eax, '0'
+    sub ebx, '0'
+    mov ecx, 0
+    mov edx, 0
+    imul ebx
+    add eax, '0'
+    push eax
     jmp check_operator
 divi:
+    pop ebx
+    pop eax
+    sub eax, '0'
+    sub ebx, '0'
+    mov ecx, 0
+    mov edx, 0
+    idiv ebx
+    add eax, '0'
+    push eax
     jmp check_operator
     
     fim
