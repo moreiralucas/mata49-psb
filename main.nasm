@@ -54,7 +54,7 @@ volta_inicio:
     mov al, [expressao + ebx]
     add ebx,1
     mov byte [char_atual], al
-    cmp al, '='
+    cmp al, '=' ; Alterar esse caracter
     je o_fim
     cmp al, '('
     je par_abr
@@ -245,17 +245,49 @@ divi:
     add eax, '0'
     push eax
     jmp check_operator
-    
-    fim
+    ;fim
     
 o_fim2:
-    mov al, 0xa
+    mov al, 0xa             ; Move quebra de linha para o registrador al
     mov byte [char_atual], al
     imprima char_atual,1
     pop eax
     ;add eax, '0'
+    sub eax, '0'
     mov [i], eax
     imprima i, 1
+    ;mov dword [topo_pilha], esp ; Captura o endereço do topo da pilha daque momento
+    ; -------------------
+    ; Verifica se é positivo ou negativo
+    cmp eax, 0
+    jns positivo
+    mov ebx, '-'
+    mov byte [char_atual], ebx
+    imprima char_atual, 1
+    positivo:
+    ; -------------------
+    ; Laço para pegar todos os caracteres de um número inteiro
+    mov ebx, 10 ; Inicializa o registrador ebx
+    divide_por_dez: ; Vai dividindo por 10 até chegar em zero
+    cmp eax, 0
+    je exibe_resultado
+    mov edx, 0 ; Zera o registrador
+    div eax
+    push edx ; Empilha o resto das divisões por 10
+    jmp divide_por_dez
+    
+    exibe_resultado:
+    push edx
+    mov edx, [topo_pilha]
+    
+    loop_resultado:
+    cmp edx, esp
+    je fim
+    pop eax
+    add eax, '0'
+    mov byte [char_atual], eax
+    imprima char_atual, 1
+    ;; -------------------
     ; Chamar a função de verificação da pilha
     ; Verificar reg esp
     fim
