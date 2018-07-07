@@ -250,19 +250,18 @@ divi:
 o_fim2:
     mov al, 0xa             ; Move quebra de linha para o registrador al
     mov byte [char_atual], al
-    imprima char_atual,1
+    imprima char_atual,1  ; Imprime quebra de linha
     pop eax
     ;add eax, '0'
     sub eax, '0'
     mov [i], eax
-    imprima i, 1
-    ;mov dword [topo_pilha], esp ; Captura o endereço do topo da pilha daque momento
+    ;imprima i, 1 ; Imprime o caracter em ASCII
     ; -------------------
     ; Verifica se é positivo ou negativo
     cmp eax, 0
     jns positivo
-    mov ebx, '-'
-    mov byte [char_atual], ebx
+    mov bl, '-'
+    mov byte [char_atual], bl
     imprima char_atual, 1
     positivo:
     ; -------------------
@@ -272,22 +271,24 @@ o_fim2:
     cmp eax, 0
     je exibe_resultado
     mov edx, 0 ; Zera o registrador
-    div eax
+    div ebx
     push edx ; Empilha o resto das divisões por 10
     jmp divide_por_dez
     
     exibe_resultado:
-    push edx
+    ;push edx
     mov edx, [topo_pilha]
     
     loop_resultado:
     cmp edx, esp
-    je fim
+    je fim3
     pop eax
     add eax, '0'
-    mov byte [char_atual], eax
+    mov byte [char_atual], al
     imprima char_atual, 1
+    jmp loop_resultado
     ;; -------------------
     ; Chamar a função de verificação da pilha
     ; Verificar reg esp
+fim3:
     fim
