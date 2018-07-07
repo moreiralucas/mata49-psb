@@ -25,6 +25,12 @@
     int 0x80
 %endmacro
 
+section .data
+    msg_com_erro db "Erro de formatação"
+    len1 equ $ - msg_com_erro
+    msg_sem_erro db "Bem formatada"
+    len2 equ $ - msg_sem_erro
+
 section .bss
     topo_pilha resd 1
     expressao_pos resb 200
@@ -35,7 +41,7 @@ section .bss
     auxiliar resb 1
     abre_p resw 1
     fecha_p resw 1
-    
+
 section .text
     global _start
     
@@ -49,12 +55,11 @@ _start:
     push eax
 volta_inicio:
     ;mov byte [contador], 0x0
-    
     mov eax, 0x0
     mov al, [expressao + ebx]
     add ebx,1
     mov byte [char_atual], al
-    cmp al, '=' ; Alterar esse caracter
+    cmp al, 0xa ; Compara se é fim de linha
     je o_fim
     cmp al, '('
     je par_abr
@@ -86,6 +91,9 @@ par_abr:
 ;------------------
 par_fec:
     ;Implementar parte que verifica estouro de pilha
+    mov ecx, [topo_pilha]
+    cmp ecx, esp
+    je msg_error
     pop ecx
     cmp cl,'('
     je volta_inicio
@@ -147,17 +155,32 @@ fim_mult_ou_div:
 ;------------------
     
 o_fim:
-    ;mov byte [char_atual],0xa
-    ;imprima char_atual,1
-    ;mov edx, 0x0
-    ;mov al, [expressao_pos +edx]
-    ;mov [char_atual],al
-    ;imprima char_atual,1
+    ;Inicia trecho para tratar o '(' que é inserido no início do algoritmo
+par_fec_fim: 
+    mov ecx, [topo_pilha]
+    cmp ecx, esp
+    je msg_error
+    
+    pop ecx
+    cmp cl,'('
+    je continua_o_fim
+    mov byte [auxiliar], cl
+    ;------------------------
+    mov dword edx, [contador]
+    mov al, [auxiliar]
+    mov byte [expressao_pos + edx], al
+    inc edx
+    mov dword [contador],edx
+    ;------------------------
+    imprima auxiliar, 1 
+    jmp par_fec_fim
+    ;------------------
+continua_o_fim:
     mov eax, [topo_pilha]
     cmp eax, esp
-    jne o_fim2                   ;encaminhar para erro
+    jne msg_error                  ;encaminhar para erro
     ;---------------------------- parte da pilha de calculo de operações do sr lucas
-    mov eax,0x0
+    
     ;----------------------------
     mov eax, [contador]         ;eax eu uso pro contador (sei o total de espaços utilizaods na pilha)
     ;sub eax, 1                  ;ebx eu uso na leitura de variáveis
@@ -248,14 +271,15 @@ divi:
     ;fim
     
 o_fim2:
-    mov al, 0xa             ; Move quebra de linha para o registrador al
-    mov byte [char_atual], al
-    imprima char_atual,1  ; Imprime quebra de linha
     pop eax
     ;add eax, '0'
     sub eax, '0'
+    imprima msg_sem_erro, len2
     mov [i], eax
-    ;imprima i, 1 ; Imprime o caracter em ASCII
+    mov al, 0xa             ; Move quebra de linha para o registrador al
+    mov byte [char_atual], al
+    imprima char_atual,1  ; Imprime quebra de linha
+    
     ; -------------------
     ; Verifica se é positivo ou negativo
     cmp eax, 0
@@ -290,5 +314,11 @@ o_fim2:
     ;; -------------------
     ; Chamar a função de verificação da pilha
     ; Verificar reg esp
+msg_error:
+    imprima msg_com_erro, len1
+    ;mov eax, 0xa
+    ;mov [char_atual], eax
+    ;imprima char_atual, 1
+    jmp fim3
 fim3:
     fim
