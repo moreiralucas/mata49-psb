@@ -46,11 +46,11 @@ section .text
     global _start
     
 _start:
-    mov dword [topo_pilha],esp
+    mov dword [topo_pilha], esp
     leia expressao, 200
     mov dword [contador], 0x0
     mov ebx, 0x0
-    mov [i],ebx
+    mov [i], ebx
     mov eax, '('
     push eax
 volta_inicio:
@@ -156,26 +156,26 @@ fim_mult_ou_div:
     
 o_fim:
     ;Inicia trecho para tratar o '(' que é inserido no início do algoritmo
-par_fec_fim: 
-    mov ecx, [topo_pilha]
-    cmp ecx, esp
-    je msg_error
+;par_fec_fim: 
+    ;mov ecx, [topo_pilha]
+    ;cmp ecx, esp
+    ;je msg_error
     
-    pop ecx
-    cmp cl,'('
-    je continua_o_fim
-    mov byte [auxiliar], cl
+    ;pop ecx
+    ;cmp cl,'('
+    ;je continua_o_fim
+    ;mov byte [auxiliar], cl
     ;------------------------
-    mov dword edx, [contador]
-    mov al, [auxiliar]
-    mov byte [expressao_pos + edx], al
-    inc edx
-    mov dword [contador],edx
+    ;mov dword edx, [contador]
+    ;mov al, [auxiliar]
+    ;mov byte [expressao_pos + edx], al
+    ;inc edx
+    ;mov dword [contador],edx
     ;------------------------
-    imprima auxiliar, 1 
-    jmp par_fec_fim
+    ;imprima auxiliar, 1 
+    ;jmp par_fec_fim
     ;------------------
-continua_o_fim:
+;continua_o_fim:
     mov eax, [topo_pilha]
     cmp eax, esp
     jne msg_error                  ;encaminhar para erro
@@ -320,5 +320,20 @@ msg_error:
     ;mov [char_atual], eax
     ;imprima char_atual, 1
     jmp fim3
+add_parenteses:
+    ;o ebx já está zerado
+    mov al, [expressao + ebx]
+    add ebx, 1
+    cmp al, 0xa ; Compara se é fim de linha
+    jne add_parenteses
+    
+    sub ebx, 1
+    mov al, ')'
+    mov [expressao + ebx], al
+    add ebx, 1
+    mov al, 0xa
+    mov [expressao + ebx], al
+    mov ebx, 0x0 ; Zera o ebx
+    jmp volta_inicio
 fim3:
     fim
