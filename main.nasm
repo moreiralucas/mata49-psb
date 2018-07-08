@@ -98,9 +98,9 @@ volta_inicio:
 
 ;------------------
 add_parenteses:
-    mov eax, [topo_pilha]
-    cmp esp, eax
-    jc msg_erro                             ;encaminha para mensagem de erro
+    ;mov eax, [topo_pilha]
+    ;cmp esp, eax
+    ;jc msg_erro                             ;encaminha para mensagem de erro
     ;O registrador ebx já está zerado
     mov al, [expressao + ebx]               ;Move para al o valor do primeiro caracter
     add ebx, 1                              ;Incrementa o registrador ebx (contador)
@@ -108,14 +108,16 @@ add_parenteses:
     je push_parenteses
     cmp al, ')'
     je pop_parenteses
-    ;//TODO: Verificar flags
+
 end_push_parenteses:
 end_pop_parenteses:
-    ; Não precisa verificar a pilha após a execução do laço acima porque é garantido que o último caracter é uma "quebra de linha"
-    ; portanto, no passo anterior é verificado a condição da pilha
     cmp al, 0xa                             ;Compara para saber se é fim de linha
     jne add_parenteses                      ;Caso não seja fim de linha, volta para o início do loop
-    ; Quando o loop acima é finalizado, é garantido que a pilha está vazia, pois caso contrário, o programa iria ser redirecionado para msg_erro
+    
+    mov eax, [topo_pilha]                   ;Resgata o valor do topo da pilha no inicio da execução do programa
+    cmp esp, eax                            ;Compara com valor do topo da pilha no instante atual
+    jne msg_erro                            ;Se tiverem valores diferentes, é encaminhada para mensagem de erro
+    
     sub ebx, 1                              ;Decrementa ebx (contador) para resgatar o caracter anterior
     mov al, ')'
     mov [expressao + ebx], al               ;Adiciona um ')' no fim da expressao
@@ -130,8 +132,11 @@ push_parenteses:
     push eax
     jmp end_push_parenteses
 
-pop_parenteses:
-    pop eax
+pop_parenteses:                             ;Verifica se existe algum elemento na pilha
+    mov eax, [topo_pilha]
+    cmp esp, eax
+    je msg_erro                             ;encaminha para mensagem de erro, pois não se pode remover um parenteses de uma pilha vazia
+    pop ecx
     jmp end_pop_parenteses
 ;------------------
 ;Quando o caracter atual é um '(', ele é empilhado
