@@ -1,4 +1,6 @@
 ;https://www.jdoodle.com/compile-assembler-nasm-online
+
+; Macro criada para imprimir dados na tela
 %macro imprima 2
     pushad
     mov eax, 4
@@ -9,6 +11,7 @@
     popad
 %endmacro
 
+; Macro criada para ler os dados de entrada
 %macro leia 2
     pushad
     mov eax, 3
@@ -19,48 +22,58 @@
     popad
 %endmacro
 
+; Macro para verificar se a pilha está vazia ou não
+%macro verifica_pilha 0
+    pushad
+    mov ecx, [topo_pilha]
+    cmp esp, ecx
+    je msg_erro
+    popad
+%endmacro
+
+; Macro criada para finalizar a execução do programa
 %macro fim 0
     mov eax, 1
     mov ebx, 0
     int 0x80
 %endmacro
 
+section .bss
+    topo_pilha resd 1                   ;variavel que armazena o valor do topo da pilha no inicio da execução do programa
+    expressao_pos resb 200              ;variavel que armazena a expressao pos-fixa
+    contador resd 1                     ;contador
+    expressao resb 200                  ;variavel que armazena a expressao infixa
+    i resw 1                            ;contador
+    char_atual resb 1                   ;variavel para armazenar um caracter por vez durante as operações
+    auxiliar resb 1                     ;Variavel auxiliar para manipular n conversão de infixa para pos fixa
+
 section .data
+    ; Declaração das mensagens a serem exibidas
     msg_com_erro db "Erro de formatação"
     len1 equ $ - msg_com_erro
     msg_sem_erro db "Bem formatada"
     len2 equ $ - msg_sem_erro
 
-section .bss
-    topo_pilha resd 1
-    expressao_pos resb 200
-    contador resd 1
-    expressao resb 200
-    i resw 1
-    char_atual resb 1
-    auxiliar resb 1
-    abre_p resw 1
-    fecha_p resw 1
-
 section .text
     global _start
-    
+
 _start:
-    mov dword [topo_pilha],esp
-    leia expressao, 200
-    mov dword [contador], 0x0
-    mov ebx, 0x0
-    mov [i],ebx
-    mov eax, '('
-    push eax
+    mov dword [topo_pilha], esp         ;Guarda o endereço inicial do topo da pilha
+    leia expressao, 200                 ;Ler os dados de entrada
+    mov dword [contador], 0x0           ;Zera um contador
+    mov ebx, 0x0                        ;Zera o registrador ebx, que será utilizado como contador
+    mov [i], ebx                        ;Move o registrador ebx para a variavel (contador) 'i'
+    jmp add_parenteses                  ;Adiciona parenteses no inicio e no fim da expressao e verifica se esta bem formada
+
+; Iniciao loop para converter de infixa para pos-fixa
 volta_inicio:
-    ;mov byte [contador], 0x0
-    mov eax, 0x0
-    mov al, [expressao + ebx]
-    add ebx,1
-    mov byte [char_atual], al
-    cmp al, 0xa ; Compara se é fim de linha
-    je o_fim
+    ;mov eax, 0x0                        ;Zera o registrador eax //TODO
+    mov al, [expressao + ebx]            ;Move para al o primeiro caracter da expressao
+    add ebx, 1                           ;Incrementa ebx
+    mov byte [char_atual], al            ;Move o caracter que está armazenado em al para a variavel char_atual
+    cmp al, 0xa                          ;Verifica se é o fim da expressao
+    je o_fim_conversao                   ;Caso seja o fim da expressao, segue para o proximo passo
+    ;Nestre trecho é verificado se o caracter atual é um operador ou um parenteses
     cmp al, '('
     je par_abr
     cmp al,')'
@@ -73,64 +86,112 @@ volta_inicio:
     je mult_ou_div
     cmp al, '/'
     je mult_ou_div
+    ; Caso o caracter atual seja um valor númerico, ele é inserido na variavel expressao_pos
     ;------------------------
-    mov dword edx, [contador]
-    mov al, [char_atual]
-    mov byte [expressao_pos + edx], al
-    inc edx
-    mov dword [contador],edx
+    mov dword edx, [contador]               ;Resgata o valor do contador
+    mov al, [char_atual]                    ;Move o valor da variavel char_atual para al
+    mov byte [expressao_pos + edx], al      ;Move al para expressao_pos
+    inc edx                                 ;Incrementa o contador
+    mov dword [contador], edx               ;Guarda o valor do contador na variavel
     ;------------------------
-    imprima char_atual, 1
-    jmp volta_inicio
+    jmp volta_inicio                        ; Volta para o inicio do loop
 
 ;------------------
+add_parenteses:
+    ;mov eax, [topo_pilha]
+    ;cmp esp, eax
+    ;jc msg_erro                             ;encaminha para mensagem de erro
+    ;O registrador ebx já está zerado
+    mov al, [expressao + ebx]               ;Move para al o valor do primeiro caracter
+    add ebx, 1                              ;Incrementa o registrador ebx (contador)
+    cmp al, '('
+    je push_parenteses
+    cmp al, ')'
+    je pop_parenteses
+
+end_push_parenteses:
+end_pop_parenteses:
+    cmp al, 0xa                             ;Compara para saber se é fim de linha
+    jne add_parenteses                      ;Caso não seja fim de linha, volta para o início do loop
+    
+    mov eax, [topo_pilha]                   ;Resgata o valor do topo da pilha no inicio da execução do programa
+    cmp esp, eax                            ;Compara com valor do topo da pilha no instante atual
+    jne msg_erro                            ;Se tiverem valores diferentes, é encaminhada para mensagem de erro
+    
+    sub ebx, 1                              ;Decrementa ebx (contador) para resgatar o caracter anterior
+    mov al, ')'
+    mov [expressao + ebx], al               ;Adiciona um ')' no fim da expressao
+    add ebx, 1                              ;Incrementa o registrador ebx (contador)
+    mov al, 0xa
+    mov [expressao + ebx], al               ;Adiciona uma "quebra de linha" no fim da expressao
+    mov ebx, 0x0                            ;Zera o registrador ebx
+    mov eax, '('
+    push eax                                ;Adiciona o '(' no inicio da pilha
+    jmp volta_inicio                        ;Volta para o inicio do programa
+push_parenteses:
+    push eax
+    jmp end_push_parenteses
+
+pop_parenteses:                             ;Verifica se existe algum elemento na pilha
+    mov eax, [topo_pilha]
+    cmp esp, eax
+    je msg_erro                             ;encaminha para mensagem de erro, pois não se pode remover um parenteses de uma pilha vazia
+    pop ecx
+    jmp end_pop_parenteses
+;------------------
+;Quando o caracter atual é um '(', ele é empilhado
 par_abr:
     mov eax, [char_atual]
     push eax
     jmp volta_inicio
+
 ;------------------
 par_fec:
-    ;Implementar parte que verifica estouro de pilha
-    mov ecx, [topo_pilha]
-    cmp ecx, esp
-    je msg_error
-    pop ecx
-    cmp cl,'('
-    je volta_inicio
-    mov byte [auxiliar], cl
+    verifica_pilha                          ;Verifica a situação da pilha
+    pop ecx                                 ;Desempilha o valor do topo da pilha
+    cmp cl,'('                              ;Compara o valor desempilhado com o caracter '('
+    je volta_inicio                         ;Volta para o inicio caso sejam iguais
+    mov byte [auxiliar], cl                 ;Move o caracter desempilhado para uma variavel auxiliar
     ;------------------------
+    ;Adiciona esse caracter em um vetor e incrementa seu contador
     mov dword edx, [contador]
     mov al, [auxiliar]
     mov byte [expressao_pos + edx], al
     inc edx
     mov dword [contador],edx
     ;------------------------
-    imprima auxiliar, 1 
-    jmp par_fec
+    jmp par_fec                             ;Volta para o inicio dessa label
+    
 ;------------------
 mais_ou_menos:
-    pop ecx
-    cmp cl, '('
-    je fim_mais_ou_menos
-    mov [auxiliar],cl
+    verifica_pilha                          ;Verifica a situação da pilha
+    pop ecx                                 ;Desempilha o valor do topo da pilha
+    cmp cl, '('                             ;Compara o valor desempilhado com o caracter '('
+    je fim_mais_ou_menos                    ;Vai para a label que finaliza essa tarefa
+    mov [auxiliar], cl                      ;Move o caracter desempilhado para uma variavel auxiliar
     ;------------------------
+    ;Adiciona esse caracter em um vetor e incrementa seu contador
     mov dword edx, [contador]
     mov al, [auxiliar]
     mov byte [expressao_pos + edx], al
     inc edx
     mov dword [contador],edx
     ;------------------------
-    imprima auxiliar, 1
-    jmp mais_ou_menos
+    jmp mais_ou_menos                       ;Volta para o inicio dessa label
+    
+;------------------
 fim_mais_ou_menos:
     mov ecx, '('
-    push ecx
+    push ecx                                ;Empilha o caracter '('
     mov ecx, [char_atual]
-    push ecx
-    jmp volta_inicio
+    push ecx                                ;Empilha o caracter atual
+    jmp volta_inicio                        ;Volta para o inicio
+
 ;------------------
 mult_ou_div:
-    pop ecx
+    verifica_pilha                          ;Verifica a situação da pilha
+    pop ecx                                 ;Desempilha o valor do topo da pilha
+    ;Verifica se o caracter desempilhado é diferente de '(', '+' ou '-'
     cmp cl, '('
     je fim_mult_ou_div
     cmp cl, '+'
@@ -139,71 +200,45 @@ mult_ou_div:
     je fim_mult_ou_div
     mov [auxiliar], cl
     ;------------------------
+    ;Adiciona esse caracter em um vetor e Incrementa seu contador
     mov dword edx, [contador]
     mov al, [auxiliar]
     mov byte [expressao_pos + edx], al
     inc edx
     mov dword [contador],edx
     ;------------------------
-    imprima auxiliar, 1
-    jmp mult_ou_div
+    jmp mult_ou_div                         ;Volta para o inicio dessa label
+
 fim_mult_ou_div:
-    push ecx
+    push ecx                                ; Empilha novamente o último caracter desempilhado na label anterior
     mov ecx, [char_atual]
-    push ecx
-    jmp volta_inicio
+    push ecx                                ;Empilha o caracter atual
+    jmp volta_inicio                        ;Volta para o inicio
+    
 ;------------------
-    
-o_fim:
-    ;Inicia trecho para tratar o '(' que é inserido no início do algoritmo
-par_fec_fim: 
-    mov ecx, [topo_pilha]
-    cmp ecx, esp
-    je msg_error
-    
-    pop ecx
-    cmp cl,'('
-    je continua_o_fim
-    mov byte [auxiliar], cl
-    ;------------------------
-    mov dword edx, [contador]
-    mov al, [auxiliar]
-    mov byte [expressao_pos + edx], al
-    inc edx
-    mov dword [contador],edx
-    ;------------------------
-    imprima auxiliar, 1 
-    jmp par_fec_fim
-    ;------------------
-continua_o_fim:
+o_fim_conversao: ;//TODO: Verificar isso
     mov eax, [topo_pilha]
     cmp eax, esp
-    jne msg_error                  ;encaminhar para erro
-    ;---------------------------- parte da pilha de calculo de operações do sr lucas
-    
+    jne msg_erro                            ;encaminha para mensagem de erro
     ;----------------------------
-    mov eax, [contador]         ;eax eu uso pro contador (sei o total de espaços utilizaods na pilha)
-    ;sub eax, 1                  ;ebx eu uso na leitura de variáveis
-    mov ecx, 0x0                ;ecx eu uso como 'i' e como pilha
+    mov eax, [contador]                     ;eax é usado como contador (para saber o total de espaços utilizaods na pilha)
+    mov ecx, 0x0                            ;ecx é usado como 'i' e como pilha
     mov [i], ecx
-check_operator:                 ;edx eu uso how
+
+;------------------------
+; Trecho que percorre a expressão pós fixa e efetua as operações
+check_operator:
     mov eax, [contador]
     mov ecx, [i]
-    ;add ecx, '0'
-    cmp ecx, eax
-    je o_fim2
+    cmp ecx, eax                            ;Verifica se chegou no fim do vetor de caracter
+    je empilha_result                       ;Caso tenha chegado, vá para a próxima label
     ;---------------------------
     mov bl, [expressao_pos + ecx]
-    add ecx, 1
-    mov [i], ecx
-    ;mov dl, bl
-    ;mov byte [char_atual],dl
-    ;imprima char_atual,1
+    add ecx, 1                              ;Incrementa ecx
+    mov [i], ecx                            ;Move para a variavel 'i'
     mov bh, '+'
     cmp bl,bh
     je soma
-    ;mov byte [char_atual],'*'
-    ;imprima [char_atual],1
     mov bh, '-'
     cmp bl,bh
     je subt
@@ -214,30 +249,22 @@ check_operator:                 ;edx eu uso how
     cmp bl,bh
     je divi
     movsx edx, bl
-    ;----------------------------
-    ;mov dl, bl
-    ;mov byte [char_atual],dl
-    ;imprima char_atual,1
-    ;-----------------------------
+    ;--------------------
     push edx
-    ;inc ecx
-    jmp check_operator
+    jmp check_operator                      ;Volta para o inicio dessa label
     
-soma:
-    ;mov dl, '='
-    ;mov byte [char_atual],dl
-    ;imprima char_atual,1
+;------------------------
+soma:                                       ;Realiza operação de soma
     pop ebx
     pop eax
-    ;mov [i],ebx
-    ;imprima i, 1
     sub ebx, '0'
     sub eax, '0'
     add eax, ebx
     add eax, '0'
     push eax
     jmp check_operator
-subt:
+
+subt:                                       ;Realiza operação de subtração
     pop ebx
     pop eax
     sub ebx, '0'
@@ -246,7 +273,8 @@ subt:
     add eax, '0'
     push eax
     jmp check_operator
-mult:
+
+mult:                                       ;Realiza operação de multiplicação
     pop ebx
     pop eax
     sub eax, '0'
@@ -257,7 +285,8 @@ mult:
     add eax, '0'
     push eax
     jmp check_operator
-divi:
+
+divi:                                       ;Realiza operação de divisão
     pop ebx
     pop eax
     sub eax, '0'
@@ -268,57 +297,52 @@ divi:
     add eax, '0'
     push eax
     jmp check_operator
-    ;fim
-    
-o_fim2:
-    pop eax
-    ;add eax, '0'
-    sub eax, '0'
-    imprima msg_sem_erro, len2
-    mov [i], eax
-    mov al, 0xa             ; Move quebra de linha para o registrador al
+
+empilha_result:
+    ;Quando a execução chega nesse ponto, é porque ela está bem formada
+    imprima msg_sem_erro, len2              ;Imprime mensagem de expressão bem formada
+    mov al, 0xa                             ;Move quebra de linha para o registrador al
     mov byte [char_atual], al
-    imprima char_atual,1  ; Imprime quebra de linha
-    
+    imprima char_atual,1                    ;Imprime quebra de linha
+    ; -----------------
+    pop eax
+    sub eax, '0'
     ; -------------------
-    ; Verifica se é positivo ou negativo
+    ;Verifica se é positivo ou negativo
     cmp eax, 0
     jns positivo
     mov bl, '-'
     mov byte [char_atual], bl
     imprima char_atual, 1
-    positivo:
-    ; -------------------
+    imul eax, -1                            ;multiplica por -1 para ficar positivo
+
+; -------------------
+positivo:
     ; Laço para pegar todos os caracteres de um número inteiro
-    mov ebx, 10 ; Inicializa o registrador ebx
-    divide_por_dez: ; Vai dividindo por 10 até chegar em zero
+    mov ebx, 10                             ;Inicializa o registrador ebx
+
+divide_por_dez:                             ;Vai dividindo por 10 até chegar em zero
     cmp eax, 0
     je exibe_resultado
-    mov edx, 0 ; Zera o registrador
+    mov edx, 0                              ;Zera o registrador
     div ebx
-    push edx ; Empilha o resto das divisões por 10
+    push edx                                ;Empilha o resto das divisões por 10
     jmp divide_por_dez
-    
-    exibe_resultado:
-    ;push edx
+
+exibe_resultado:
     mov edx, [topo_pilha]
-    
-    loop_resultado:
+
+loop_resultado:
     cmp edx, esp
-    je fim3
+    je fim_programa                         ;Chama a macro que finaliza o programa
     pop eax
-    add eax, '0'
+    add eax, '0'                            ;Adiciona '0' para o valor se enquadrar na tabela ASCII
     mov byte [char_atual], al
-    imprima char_atual, 1
-    jmp loop_resultado
-    ;; -------------------
-    ; Chamar a função de verificação da pilha
-    ; Verificar reg esp
-msg_error:
-    imprima msg_com_erro, len1
-    ;mov eax, 0xa
-    ;mov [char_atual], eax
-    ;imprima char_atual, 1
-    jmp fim3
-fim3:
+    imprima char_atual, 1                   ;Imprime o caracter em questão
+    jmp loop_resultado                      ;Volta para o início dessa label
+
+msg_erro:
+    imprima msg_com_erro, len1              ;Label para exibir mensagem de erro
+
+fim_programa:
     fim
