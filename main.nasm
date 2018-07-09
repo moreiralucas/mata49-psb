@@ -98,9 +98,6 @@ volta_inicio:
 
 ;------------------
 add_parenteses:
-    ;mov eax, [topo_pilha]
-    ;cmp esp, eax
-    ;jc msg_erro                             ;encaminha para mensagem de erro
     ;O registrador ebx já está zerado
     mov al, [expressao + ebx]               ;Move para al o valor do primeiro caracter
     add ebx, 1                              ;Incrementa o registrador ebx (contador)
@@ -133,9 +130,7 @@ push_parenteses:
     jmp end_push_parenteses
 
 pop_parenteses:                             ;Verifica se existe algum elemento na pilha
-    mov eax, [topo_pilha]
-    cmp esp, eax
-    je msg_erro                             ;encaminha para mensagem de erro, pois não se pode remover um parenteses de uma pilha vazia
+    verifica_pilha                          ;Verifica a situação da pilha
     pop ecx
     jmp end_pop_parenteses
 ;------------------
@@ -216,7 +211,7 @@ fim_mult_ou_div:
     jmp volta_inicio                        ;Volta para o inicio
     
 ;------------------
-o_fim_conversao: ;//TODO: Verificar isso
+o_fim_conversao:
     mov eax, [topo_pilha]
     cmp eax, esp
     jne msg_erro                            ;encaminha para mensagem de erro
