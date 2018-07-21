@@ -1,3 +1,15 @@
+; Macro criada para imprimir dados na tela
+%macro print 2
+    pushad
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, %1
+    mov edx, %2
+    int 0x80
+    popad
+%endmacro
+
+; Macro criada para ler os dados de entrada
 %macro scan 2
     pushad
     mov eax, 3
@@ -8,30 +20,156 @@
     popad
 %endmacro
 
-section .data
-    x db '5'
-    y db '3'
-    msg db  "sum of x and y is "
-    len equ $ - msg
+%macro swap 2
+    pushad
+    mov eax, %1
+    mov ebx, %2
+    mov %1, ebx
+    mov %2, eax
+    popad
+%endmacro
 
-segment .bss
-    vetor resb 200
+%macro fim 0
+    mov eax, 1
+    mov ebx, 0
+    int 0x80
+%endmacro
 
+section .bss
+    vetor_entrada resb 200
+    vetor_numerico resd 200
+    n resd 1
+    r resd 1
+    p resd 1
+    i resd 1
+    j resd 1
+    imp resb 1
+    
+section .text
 global _start
 
-_start:
-    scan vetor, 200
-    
-
-    int     0x80
-quick_srot:
-    enter
-    
-leave
-ret
-
 partition:
-    enter
+    ; -------------------------------- pega parâmetros
+    mov ebx, [esp + 4]  ;ebx = p
+    mov ecx, [esp + 8]  ;ecx = r
+    mov dword [p], ebx
+    mov dword [r], ecx
+   ;----------------------------------- fç
+   shl ecx, 2           ;r*4
+   mov eax, [vetor_numerico + ecx]  ;x = arrray[r] ---n pode mexer em eax
+   shr ecx, 2
+   mov dword [i], ebx               ;i=j=p
+   mov dword [j], ebx
+   
+   
+   loop1:
+   mov ebx, [j]
+   mov ecx, [r]
+   cmp ebx, ecx
+   jge fim_loop1
+   mov ebx, [j]
+   shl ebx, 2   
+   mov ecx, [vetor_numerico + ebx]      ;ecx tem o valor do array[j]
+   ;----------------------------------------
+   ; Unificar trecho acima com o trecho de baixo
+   cmp ecx, eax
+   jg array_maior_x
+   mov ebx, [i]
+   shl ebx, 2
+   mov ecx, [j]
+   shl ecx, 2
+   swap [vetor_numerico + ebx], [vetor_numerico + ecx]
+   ;------------------------------------------------------
+   ;Incrementa i
+   mov ebx, [i]
+   add ebx, 1
+   mov dword [i], ebx
+   ;---------------------------------
+   array_maior_x:
+    mov ebx, [j]
+    add ebx, 1
+    mov dword [j], ebx
+    jmp loop1
     
-leave
-ret
+    fim_loop1:
+        
+    mov ebx, [i]
+    shl ebx, 2
+    mov ecx, [r]
+    shl ecx, 2
+    swap [vetor_numerico + ebx],[vetor_numerico + ecx]
+    mov eax, [i]
+    pop ebp
+    ret
+    
+    
+quicksort:              ;esp armazena q em endereço -4
+    ; -------------------------------- pega parâmetros
+    mov ebx, [esp + 4]  ;ebx = p
+    mov ecx, [esp + 8]  ;ecx = r
+    ; -------------------------------- armazenar variaveis locais
+    push ebp
+    mov ebp, esp
+    sub esp, 4
+    ; -------------------------------- começo da função
+    cmp ebx, ecx
+    jge eh_maior_ou_igual
+    push ebx                        ;passando p como parâmetro
+    push ecx                        ;passando r como parâmetro
+    call partition
+    mov dword [ebp-4], eax
+    push ebx
+    sub eax, 1
+    push eax
+    call quicksort
+    add eax, 2
+    push eax
+    push ecx
+    call quicksort
+    
+    eh_maior_ou_igual:
+    ; -------------------------------- fim da fç
+    mov esp, ebp
+    pop ebp
+    ret
+
+_start:
+    scan vetor_entrada, 200
+    ; aqui deve entrar o techo do código que converte a string para inteiro.
+    mov eax, 0x0
+    mov dword [n], eax
+    mov ebx, 0x0
+    
+volta_inicio:
+    mov al, [vetor_entrada + ebx]
+    cmp al, 0x23
+    je fim_laco
+    cmp al, 0x20
+    je volta_inicio
+    ;----- se for negativo
+    sub al,'0'
+    mov ebx, [n]
+    movsx eax, al
+    mov dword [vetor_numerico + ebx], eax
+    add ebx, 1
+    mov dword [n], ebx
+    add ebx, 1
+    jmp volta_inicio
+    ; em vetor_numerico vou admitir que existe um vetor com valores para serem ordenados
+    ;n indica tamanho do vetor
+
+fim_laco:
+    mov eax, 0x0
+    push eax
+    mov eax, [n]                        ;Falta definir o valor de n
+    push eax
+    call quicksort
+    pop eax                             
+    pop eax
+    
+    mov eax, [n]
+    add eax, '0'
+    mov dword [n], eax
+    print n, 1
+    fim
+
