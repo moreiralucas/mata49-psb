@@ -38,6 +38,7 @@
 section .bss
     vetor_entrada resb 200
     vetor_numerico resd 200
+    char_atual resb 1
     n resd 1
     r resd 1
     p resd 1
@@ -150,7 +151,7 @@ volta_inicio:
     ;----- se for negativo
     sub al,'0'
     movsx eax, al
-    mov dword [vetor_numerico + ebx], eax
+    mov dword [vetor_numerico + ecx], eax
     add ecx, 1
     
     fim_espaco:
@@ -164,14 +165,22 @@ fim_laco:
     mov eax, 0x0
     push eax
     mov eax, [n]                        ;Falta definir o valor de n
+    sub eax, 1
     push eax
     call quicksort
     pop eax                             
     pop eax
     
-    mov eax, [n]
-    add eax, '0'
-    mov dword [n], eax
-    print n, 1
+    mov ebx, 0x0
+print_array:
+    mov ecx, [vetor_numerico + ebx]
+    add ecx, '0'
+    mov byte [char_atual], cl
+    
+    print char_atual, 1
+    add ebx, 1
+    
+    mov ecx, [n]
+    cmp ebx, ecx ; Compara se o contador é igual ao tamanho do vetor
+    jl print_array
     fim
-
