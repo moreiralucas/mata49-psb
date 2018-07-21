@@ -137,28 +137,30 @@ _start:
     scan vetor_entrada, 200
     ; aqui deve entrar o techo do código que converte a string para inteiro.
     mov eax, 0x0
-    mov dword [n], eax
     mov ebx, 0x0
+    mov ecx, 0x0
+    mov dword [n], eax
     
 volta_inicio:
     mov al, [vetor_entrada + ebx]
-    cmp al, 0x23
+    cmp al, 0xa
     je fim_laco
     cmp al, 0x20
-    je volta_inicio
+    je fim_espaco
     ;----- se for negativo
     sub al,'0'
-    mov ebx, [n]
     movsx eax, al
     mov dword [vetor_numerico + ebx], eax
-    add ebx, 1
-    mov dword [n], ebx
+    add ecx, 1
+    
+    fim_espaco:
     add ebx, 1
     jmp volta_inicio
     ; em vetor_numerico vou admitir que existe um vetor com valores para serem ordenados
     ;n indica tamanho do vetor
-
+    
 fim_laco:
+    mov dword [n], ecx
     mov eax, 0x0
     push eax
     mov eax, [n]                        ;Falta definir o valor de n
