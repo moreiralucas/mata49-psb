@@ -44,21 +44,56 @@ section .bss
     p resd 1
     i resd 1
     j resd 1
+    aux1 resd 1
+    aux2 resd 1
     imp resb 1
     
 section .text
 global _start
 
 partition:
+    ;--------------------------------------
+    ;mov ecx, [esp + 4]  ;ecx = r :Direita
+    ;mov ebx, [esp + 8]  ;ebx = p :Esquerda
+    ;-------------------------------------
+    
     ; -------------------------------- pega parâmetros
-    mov ebx, [esp + 4]  ;ebx = p
-    mov ecx, [esp + 8]  ;ecx = r
+    mov ecx, [esp + 4]  ;ecx = r :Diretia
+    mov ebx, [esp + 8]  ;ebx = p :Esquerda
     mov dword [p], ebx
     mov dword [r], ecx
-   ;----------------------------------- fç
-   shl ecx, 2           ;r*4
+    
+    ;----DEBUG-----------
+    ;mov edx, ebx
+    ;add edx, '0'
+    ;mov byte [char_atual], dl
+    ;print char_atual, 1 ;Deve imprimir 0
+
+    ;mov edx, ecx
+    ;add edx, '0'
+    ;mov byte [char_atual], dl
+    ;print char_atual, 1 ;;Deve imprimir 5
+    ;----END DEBUG-----------
+    
+    ;----------------------------------- fç
+    ;shl ecx, 2           ;r*4
+    ;----DEBUG-----------
+    ;mov edx, ecx
+    ;add edx, '0'
+    ;mov byte [char_atual], dl
+    ;print char_atual, 1 ;Deve imprimir 0
+    ;----END DEBUG-----------
+   
    mov eax, [vetor_numerico + ecx]  ;x = arrray[r] ---n pode mexer em eax
-   shr ecx, 2
+   
+   ;----DEBUG-----------
+    ;mov edx, eax
+    ;add edx, '0'
+    ;mov byte [char_atual], dl
+    ;print char_atual, 1 ;Deve imprimir 0
+    ;----END DEBUG-----------
+    
+   ;shr ecx, 2
    mov dword [i], ebx               ;i=j=p
    mov dword [j], ebx
    
@@ -69,17 +104,32 @@ partition:
    cmp ebx, ecx
    jge fim_loop1
    mov ebx, [j]
-   shl ebx, 2   
+   ;shl ebx, 2   
    mov ecx, [vetor_numerico + ebx]      ;ecx tem o valor do array[j]
    ;----------------------------------------
    ; Unificar trecho acima com o trecho de baixo
    cmp ecx, eax
    jg array_maior_x
    mov ebx, [i]
-   shl ebx, 2
+   ;shl ebx, 2
    mov ecx, [j]
-   shl ecx, 2
-   swap [vetor_numerico + ebx], [vetor_numerico + ecx]
+   ;shl ecx, 2
+   
+   ; --- Swapi ----
+   mov edx, [vetor_numerico + ebx]
+   mov dword [aux1], edx
+   
+   mov edx, [vetor_numerico + ecx]
+   mov [vetor_numerico + ebx], edx
+   
+   mov edx, [aux1]
+   mov [vetor_numerico + ecx], edx
+   
+   ;mov dword aux2, [vetor_numerico + ecx]
+   ;mov dword [vetor_numerico + ecx], aux1
+   ;mov dword [vetor_numerico + ebx], aux2
+   ;---end suapi-----
+   ;swap [vetor_numerico + ebx], [vetor_numerico + ecx]
    ;------------------------------------------------------
    ;Incrementa i
    mov ebx, [i]
@@ -95,9 +145,9 @@ partition:
     fim_loop1:
         
     mov ebx, [i]
-    shl ebx, 2
+    ;shl ebx, 2
     mov ecx, [r]
-    shl ecx, 2
+    ;shl ecx, 2
     swap [vetor_numerico + ebx],[vetor_numerico + ecx]
     mov eax, [i]
     pop ebp
@@ -106,15 +156,39 @@ partition:
     
 quicksort:              ;esp armazena q em endereço -4
     ; -------------------------------- pega parâmetros
-    mov ebx, [esp + 4]  ;ebx = p
-    mov ecx, [esp + 8]  ;ecx = r
+    mov ecx, [esp + 4]  ;ecx = r :Direita
+    mov ebx, [esp + 8]  ;ebx = p :esquerda
     ; -------------------------------- armazenar variaveis locais
     push ebp
     mov ebp, esp
     sub esp, 4
     ; -------------------------------- começo da função
+    
+    ;----DEBUG-----------
+    ;mov edx, ebx
+    ;add edx, '0'
+    ;mov byte [char_atual], dl
+    ;print char_atual, 1 ;Deve imprimir 0
+    
+    ;mov edx, ecx
+    ;add edx, '0'
+    ;mov byte [char_atual], dl
+    ;print char_atual, 1 ;;Deve imprimir 5
+    ;----END DEBUG-----------
+    
+    ;----DEBUG-----------
+    ;mov edx, '*'
+    ;mov byte [char_atual], dl
+    ;print char_atual, 1
+    ;----END DEBUG-----------
+    
     cmp ebx, ecx
     jge eh_maior_ou_igual
+    ;----DEBUG-----------
+    ;mov edx, '+'
+    ;mov byte [char_atual], dl
+    ;print char_atual, 1
+    ;------------------
     push ebx                        ;passando p como parâmetro
     push ecx                        ;passando r como parâmetro
     call partition
@@ -130,6 +204,12 @@ quicksort:              ;esp armazena q em endereço -4
     
     eh_maior_ou_igual:
     ; -------------------------------- fim da fç
+    ;----DEBUG-----------
+    ;mov edx, '#'
+    ;mov byte [char_atual], dl
+    ;print char_atual, 1
+    ;----FIM DEBUG-----------
+    
     mov esp, ebp
     pop ebp
     ret
@@ -151,6 +231,13 @@ volta_inicio:
     ;----- se for negativo
     sub al,'0'
     movsx eax, al
+    ;--- DEBUG ---
+    ;mov dl, cl
+    ;add edx, '0'
+    ;mov byte [char_atual], dl
+    ;print char_atual, 1
+    ; -----------
+    
     mov dword [vetor_numerico + ecx], eax
     add ecx, 1
     
@@ -167,7 +254,7 @@ fim_laco:
     mov eax, [n]                        ;Falta definir o valor de n
     sub eax, 1
     push eax
-    call quicksort
+    call quicksort ; Estamos aqui
     pop eax                             
     pop eax
     
