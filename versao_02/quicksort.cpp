@@ -20,7 +20,6 @@ int particao(int inferior_p, int superior_p){
 		}
 	}
 	troca(&v[i+1], &v[superior_p]);
-	cout<<"*"<<i+1<<endl;
 	return (i+1);
 }
 
@@ -53,3 +52,4 @@ int main(){
 	}
 	cout<<endl;
 }
+
