@@ -20,6 +20,7 @@ int particao(int inferior_p, int superior_p){
 		}
 	}
 	troca(&v[i+1], &v[superior_p]);
+	cout<<"*"<<i+1<<endl;
 	return (i+1);
 }
 
@@ -29,7 +30,6 @@ void quicksort(int inferior_q, int superior_q){
 		quicksort(inferior_q, divisor-1);
 		quicksort(divisor+1, superior_q);
 	}
-	cout<<'a'<<endl;
 }
 
 int main(){
