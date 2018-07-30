@@ -197,7 +197,24 @@ volta_inicio:
     je fim_laco
     cmp al, 0x20
     je fim_espaco
-    ;----- se for negativo, implementar
+    cmp al, 0x2d
+    jne continua
+    
+    add ebx, 1
+    mov al, [vetor_entrada + ebx]
+    add ebx, 1
+    movsx eax, al
+    sub eax,'0'
+    neg eax
+    mov dword [vetor_numerico + ecx], eax
+    add ecx, 4
+    mov edx, [n]
+    add edx, 1
+    mov dword [n], edx
+    
+    jmp volta_inicio
+    
+    continua:
     sub al,'0'
     movsx eax, al
     mov dword [vetor_numerico + ecx], eax
@@ -233,11 +250,21 @@ fim_laco:
     mov ebx, 0x0
 print_array:
     mov ecx, [vetor_numerico + ebx]
+    cmp ecx, 0
+    jns positivo
+    
+    mov byte [char_atual],'-'
+    print char_atual, 1
+    neg ecx
+    
+    positivo:
     add ecx, '0'
     mov byte [char_atual], cl
     
     print char_atual, 1
     add ebx, 4
+    mov byte [char_atual], ' '
+    print char_atual, 1
     
     mov ecx, [n]
     shl ecx, 2
